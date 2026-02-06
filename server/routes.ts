@@ -104,19 +104,22 @@ async function seedDatabase() {
       name: "Conference Room A",
       capacity: 10,
       location: "1st Floor, East Wing",
-      features: "Projector, Video Conferencing, Whiteboard"
+      features: "Projector, Video Conferencing, Whiteboard",
+      imageUrl: "/images/conference-room-a.png"
     });
     await storage.createMeetingRoom({
       name: "Focus Room 1",
       capacity: 4,
       location: "2nd Floor, Quiet Zone",
-      features: "Whiteboard, Soundproof"
+      features: "Whiteboard, Soundproof",
+      imageUrl: "/images/focus-room-1.png"
     });
     await storage.createMeetingRoom({
       name: "Boardroom",
       capacity: 20,
       location: "Top Floor",
-      features: "Large Screen, Catering Area, Executive Chairs"
+      features: "Large Screen, Catering Area, Executive Chairs",
+      imageUrl: "/images/boardroom.png"
     });
   }
 }
