@@ -8,22 +8,25 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import BookingPage from "@/pages/booking-page";
 import MyBookings from "@/pages/my-bookings";
+import AdminDashboard from "@/pages/admin-dashboard";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={AuthPage} />
       <Route path="/register" component={AuthPage} />
-      
+
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/book/:id" component={BookingPage} />
+      <Route path="/book" component={BookingPage} />
       <Route path="/bookings" component={MyBookings} />
-      
+      <Route path="/admin" component={AdminDashboard} />
+
       {/* Default redirect to login or dashboard */}
       <Route path="/">
         {() => <Redirect to="/dashboard" />}
       </Route>
-      
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -31,12 +34,14 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="light" storageKey="meetspace-theme">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

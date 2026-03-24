@@ -1,0 +1,1 @@
+﻿client/src/hooks/use-auth.ts(2,20): error TS2305: Module '"@shared/routes"' has no exported member 'InsertUser'.

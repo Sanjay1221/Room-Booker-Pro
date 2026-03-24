@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
 });
 
 export const meetingRooms = pgTable("meeting_rooms", {
@@ -23,6 +24,7 @@ export const bookings = pgTable("bookings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   roomId: integer("room_id").notNull().references(() => meetingRooms.id),
+  email: text("email"),
   date: text("date").notNull(), // YYYY-MM-DD
   startTime: text("start_time").notNull(), // HH:mm
   endTime: text("end_time").notNull(), // HH:mm

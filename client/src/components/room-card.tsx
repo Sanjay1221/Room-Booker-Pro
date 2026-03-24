@@ -2,9 +2,11 @@ import { MeetingRoom } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, MapPin, Monitor, Coffee, Wifi } from "lucide-react";
+import { Users, MapPin, Monitor, Coffee, Wifi, Clock, Building } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useRoomBookings } from "@/hooks/use-bookings";
+import { format } from "date-fns";
 
 interface RoomCardProps {
   room: MeetingRoom;
@@ -20,6 +22,43 @@ export function RoomCard({ room }: RoomCardProps) {
     if (lower.includes("screen") || lower.includes("tv") || lower.includes("projector")) return <Monitor className="w-3 h-3" />;
     if (lower.includes("coffee")) return <Coffee className="w-3 h-3" />;
     return null;
+  };
+
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { data: todayBookings } = useRoomBookings(room.id, today);
+
+  const getAvailabilityStatus = () => {
+    if (!todayBookings) return null;
+
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+
+    let isOccupied = false;
+    let nextAvailableMins = -1;
+
+    for (const b of todayBookings) {
+      const [startH, startM] = b.startTime.split(':').map(Number);
+      const startMins = startH * 60 + startM;
+      const [endH, endM] = b.endTime.split(':').map(Number);
+      const endMins = endH * 60 + endM;
+
+      if (currentMins >= startMins && currentMins < endMins) {
+        isOccupied = true;
+        nextAvailableMins = endMins + 5; // adding 5 minute buffer
+      } else if (currentMins < startMins && nextAvailableMins !== -1 && nextAvailableMins >= startMins) {
+        // if next available clashes with another booking
+        nextAvailableMins = endMins + 5;
+      }
+    }
+
+    if (isOccupied && nextAvailableMins !== -1) {
+      const hours = Math.floor(nextAvailableMins / 60);
+      const mins = nextAvailableMins % 60;
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+      return <span className="text-destructive font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> Not Available (until {formattedTime})</span>;
+    }
+
+    return <span className="text-emerald-500 font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> Available</span>;
   };
 
   return (
@@ -51,7 +90,10 @@ export function RoomCard({ room }: RoomCardProps) {
         <CardHeader className="pb-3">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-display text-xl font-bold">{room.name}</h3>
+              <h3 className="font-display text-xl font-bold flex items-center gap-2">
+                <Building className="w-5 h-5 text-primary" />
+                {room.name}
+              </h3>
               <div className="flex items-center gap-1 text-muted-foreground mt-1 text-sm">
                 <MapPin className="w-3.5 h-3.5" />
                 {room.location}
@@ -64,21 +106,16 @@ export function RoomCard({ room }: RoomCardProps) {
           </div>
         </CardHeader>
 
-        <CardContent className="pb-3">
-          <div className="flex flex-wrap gap-2">
-            {features.map((feature, i) => (
-              <Badge key={i} variant="outline" className="text-xs bg-secondary/50 border-secondary-foreground/10 flex items-center gap-1.5">
-                {getFeatureIcon(feature)}
-                {feature}
-              </Badge>
-            ))}
+        <CardContent className="pb-3 text-sm">
+          <div className="bg-muted/50 p-2.5 rounded-lg border border-border/50 flex items-center">
+            {getAvailabilityStatus() || <span className="text-muted-foreground opacity-50 flex items-center gap-1">Checking availability...</span>}
           </div>
         </CardContent>
 
         <CardFooter className="pt-3 border-t bg-muted/20">
-          <Link href={`/book/${room.id}`} className="w-full">
-            <Button className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 shadow-lg shadow-primary/20">
-              Check Availability
+          <Link href="/book" className="w-full">
+            <Button className="w-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white font-semibold">
+              Book
             </Button>
           </Link>
         </CardFooter>

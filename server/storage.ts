@@ -30,6 +30,11 @@ export interface IStorage {
   cancelBooking(id: number, userId: number): Promise<Booking | undefined>;
   getBooking(id: number): Promise<Booking | undefined>;
 
+  // Admin
+  getAllBookings(): Promise<Booking[]>;
+  adminCancelBooking(id: number): Promise<Booking | undefined>;
+  updateMeetingRoom(id: number, room: Partial<InsertMeetingRoom>): Promise<MeetingRoom | undefined>;
+
   sessionStore: session.Store;
 }
 
@@ -77,20 +82,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBookingsByRoom(roomId: number, date?: string): Promise<Booking[]> {
-    let query = db.select().from(bookings).where(and(
+    const conditions = [
       eq(bookings.roomId, roomId),
       eq(bookings.status, "confirmed")
-    ));
-
+    ];
     if (date) {
-      query.where(and(
-        eq(bookings.roomId, roomId),
-        eq(bookings.status, "confirmed"),
-        eq(bookings.date, date)
-      ));
+      conditions.push(eq(bookings.date, date));
     }
-
-    return await query;
+    return await db.select().from(bookings).where(and(...conditions));
   }
 
   async getBooking(id: number): Promise<Booking | undefined> {
@@ -116,6 +115,30 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db.update(bookings)
       .set({ status: "cancelled" })
       .where(eq(bookings.id, id))
+      .returning();
+    return updated;
+  }
+
+  // === ADMIN ===
+  async getAllBookings(): Promise<Booking[]> {
+    return await db.select().from(bookings);
+  }
+
+  async adminCancelBooking(id: number): Promise<Booking | undefined> {
+    const [booking] = await db.select().from(bookings).where(eq(bookings.id, id));
+    if (!booking) return undefined;
+
+    const [updated] = await db.update(bookings)
+      .set({ status: "cancelled" })
+      .where(eq(bookings.id, id))
+      .returning();
+    return updated;
+  }
+
+  async updateMeetingRoom(id: number, roomParams: Partial<InsertMeetingRoom>): Promise<MeetingRoom | undefined> {
+    const [updated] = await db.update(meetingRooms)
+      .set(roomParams)
+      .where(eq(meetingRooms.id, id))
       .returning();
     return updated;
   }
