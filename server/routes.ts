@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
-// import { setupAuth } from "./auth";
+import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -20,8 +20,7 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // ❌ DISABLED AUTH
-  // setupAuth(app);
+  setupAuth(app);
 
   // === ROOMS ===
   app.get(api.rooms.list.path, async (req, res) => {
