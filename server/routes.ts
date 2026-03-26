@@ -277,7 +277,7 @@ export async function registerRoutes(
   });
 
   // Seed data if needed
-  await seedDatabase();
+ // await seedDatabase();
 
   return httpServer;
 }
