@@ -6,11 +6,6 @@ import {
   type Booking, type InsertBooking
 } from "@shared/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
-
-const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   // Auth
@@ -34,19 +29,9 @@ export interface IStorage {
   getAllBookings(): Promise<Booking[]>;
   adminCancelBooking(id: number): Promise<Booking | undefined>;
   updateMeetingRoom(id: number, room: Partial<InsertMeetingRoom>): Promise<MeetingRoom | undefined>;
-
-  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.Store;
-
-  constructor() {
-    this.sessionStore = new PostgresSessionStore({
-      pool,
-      createTableIfMissing: true,
-    });
-  }
 
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -144,15 +129,4 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = {
-  getMeetingRooms: async () => [],
-  getMeetingRoom: async () => undefined,
-  getBookingsByUser: async () => [],
-  getBookingsByRoom: async () => [],
-  getAllBookings: async () => [],
-  createBooking: async () => ({} as any),
-  cancelBooking: async () => undefined,
-  adminCancelBooking: async () => undefined,
-  updateMeetingRoom: async () => undefined,
-  createMeetingRoom: async () => ({} as any),
-};
+export const storage = new DatabaseStorage();

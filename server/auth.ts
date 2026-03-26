@@ -27,7 +27,6 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "r3pl1t_s3cr3t",
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
   };
 
   if (app.get("env") === "production") {

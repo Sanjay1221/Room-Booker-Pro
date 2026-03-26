@@ -25,29 +25,54 @@ export async function registerRoutes(
 
   // === ROOMS ===
   app.get(api.rooms.list.path, async (req, res) => {
-    const rooms = await storage.getMeetingRooms();
-    res.json(rooms);
+    try {
+      const rooms = await storage.getMeetingRooms();
+      res.json(rooms);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.get(api.rooms.get.path, async (req, res) => {
-    const room = await storage.getMeetingRoom(Number(req.params.id));
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid room ID" });
+
+      const room = await storage.getMeetingRoom(id);
+      if (!room) {
+        return res.status(404).json({ message: "Room not found" });
+      }
+      res.json(room);
+    } catch (error) {
+      console.error("Error fetching room:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-    res.json(room);
   });
 
   // === BOOKINGS ===
   app.get(api.bookings.list.path, async (req, res) => {
-    const bookings = await storage.getBookingsByUser(1); // fixed user
-    res.json(bookings);
+    try {
+      const bookings = await storage.getBookingsByUser(1); // fixed user
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching bookings by user:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.get(api.bookings.listByRoom.path, async (req, res) => {
-    const roomId = Number(req.params.id);
-    const date = req.query.date as string | undefined;
-    const bookings = await storage.getBookingsByRoom(roomId, date);
-    res.json(bookings);
+    try {
+      const roomId = Number(req.params.id);
+      if (isNaN(roomId)) return res.status(400).json({ message: "Invalid room ID" });
+
+      const date = req.query.date as string | undefined;
+      const bookings = await storage.getBookingsByRoom(roomId, date);
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error fetching bookings by room:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   app.post(api.bookings.create.path, async (req, res) => {
@@ -134,15 +159,21 @@ export async function registerRoutes(
   });
 
   app.post(api.bookings.cancel.path, async (req, res) => {
-    const bookingId = Number(req.params.id);
+    try {
+      const bookingId = Number(req.params.id);
+      if (isNaN(bookingId)) return res.status(400).json({ message: "Invalid booking ID" });
 
-    const updated = await storage.cancelBooking(bookingId, 1);
+      const updated = await storage.cancelBooking(bookingId, 1);
 
-    if (!updated) {
-      return res.status(404).json({ message: "Booking not found" });
+      if (!updated) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
-
-    res.json(updated);
   });
 
   // ❌ DISABLED ADMIN (causing crash)
