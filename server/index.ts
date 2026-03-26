@@ -1,3 +1,11 @@
+process.on("uncaughtException", (err) => {
+  console.error("🔥 Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("🔥 Unhandled Rejection:", err);
+});
+import 'dotenv/config';
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
@@ -61,6 +69,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -105,5 +114,7 @@ httpServer.listen(
 );
 
 
-
+  } catch (error) {
+    console.error("❌ Server failed to start:", error);
+  }
 })();
