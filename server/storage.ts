@@ -144,4 +144,15 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = {
+  getMeetingRooms: async () => [],
+  getMeetingRoom: async () => undefined,
+  getBookingsByUser: async () => [],
+  getBookingsByRoom: async () => [],
+  getAllBookings: async () => [],
+  createBooking: async () => ({} as any),
+  cancelBooking: async () => undefined,
+  adminCancelBooking: async () => undefined,
+  updateMeetingRoom: async () => undefined,
+  createMeetingRoom: async () => ({} as any),
+};
