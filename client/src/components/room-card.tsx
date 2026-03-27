@@ -2,11 +2,8 @@ import { MeetingRoom } from "@shared/schema";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, MapPin, Monitor, Coffee, Wifi, Clock, Building } from "lucide-react";
+import { Users, MapPin, Monitor, Coffee, Wifi } from "lucide-react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { useRoomBookings } from "@/hooks/use-bookings";
-import { format } from "date-fns";
 
 interface RoomCardProps {
   room: MeetingRoom;
@@ -24,50 +21,9 @@ export function RoomCard({ room }: RoomCardProps) {
     return null;
   };
 
-  const today = format(new Date(), "yyyy-MM-dd");
-  const { data: todayBookings } = useRoomBookings(room.id, today);
-
-  const getAvailabilityStatus = () => {
-    if (!todayBookings) return null;
-
-    const now = new Date();
-    const currentMins = now.getHours() * 60 + now.getMinutes();
-
-    let isOccupied = false;
-    let nextAvailableMins = -1;
-
-    for (const b of todayBookings) {
-      const [startH, startM] = b.startTime.split(':').map(Number);
-      const startMins = startH * 60 + startM;
-      const [endH, endM] = b.endTime.split(':').map(Number);
-      const endMins = endH * 60 + endM;
-
-      if (currentMins >= startMins && currentMins < endMins) {
-        isOccupied = true;
-        nextAvailableMins = endMins + 5; // adding 5 minute buffer
-      } else if (currentMins < startMins && nextAvailableMins !== -1 && nextAvailableMins >= startMins) {
-        // if next available clashes with another booking
-        nextAvailableMins = endMins + 5;
-      }
-    }
-
-    if (isOccupied && nextAvailableMins !== -1) {
-      const hours = Math.floor(nextAvailableMins / 60);
-      const mins = nextAvailableMins % 60;
-      const formattedTime = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-      return <span className="text-destructive font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> Not Available (until {formattedTime})</span>;
-    }
-
-    return <span className="text-emerald-500 font-semibold flex items-center gap-1.5"><Clock className="w-4 h-4" /> Available</span>;
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <Card className="group overflow-hidden border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
+    <div className="hover-scale">
+      <Card className="group overflow-hidden border border-border/50 bg-card hover:shadow-xl transition-all duration-300">
         <div className="aspect-[16/9] w-full overflow-hidden relative bg-muted">
           {room.imageUrl ? (
             <>
@@ -80,46 +36,54 @@ export function RoomCard({ room }: RoomCardProps) {
               />
             </>
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-secondary">
-              <span className="text-muted-foreground">No Image</span>
+            <div className="w-full h-full flex items-center justify-center bg-slate-100">
+              <span className="text-slate-400 text-sm font-medium">No Image Available</span>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
 
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2 pt-4 px-5">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="font-display text-xl font-bold flex items-center gap-2">
-                <Building className="w-5 h-5 text-primary" />
-                {room.name}
-              </h3>
-              <div className="flex items-center gap-1 text-muted-foreground mt-1 text-sm">
-                <MapPin className="w-3.5 h-3.5" />
-                {room.location}
+              <h3 className="font-display text-lg font-bold text-foreground leading-tight tracking-tight">{room.name}</h3>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 hover:bg-green-50 gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Available
+                </Badge>
+                <div className="flex items-center gap-1 text-muted-foreground text-xs font-medium">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {room.location}
+                </div>
               </div>
             </div>
-            <Badge variant="secondary" className="flex items-center gap-1 font-medium bg-primary/10 text-primary hover:bg-primary/20">
+            <div className="flex items-center gap-1.5 text-slate-500 bg-slate-50 px-2 py-1 rounded-md text-xs font-semibold border border-slate-100">
               <Users className="w-3.5 h-3.5" />
               {room.capacity}
-            </Badge>
+            </div>
           </div>
         </CardHeader>
 
-        <CardContent className="pb-3 text-sm">
-          <div className="bg-muted/50 p-2.5 rounded-lg border border-border/50 flex items-center">
-            {getAvailabilityStatus() || <span className="text-muted-foreground opacity-50 flex items-center gap-1">Checking availability...</span>}
+        <CardContent className="pb-4 px-5">
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {features.map((feature, i) => (
+              <Badge key={i} variant="secondary" className="text-[10px] bg-slate-100/80 text-slate-600 hover:bg-slate-200/80 border-transparent flex items-center gap-1 py-0.5 px-2 font-medium">
+                {getFeatureIcon(feature)}
+                {feature}
+              </Badge>
+            ))}
           </div>
         </CardContent>
 
-        <CardFooter className="pt-3 border-t bg-muted/20">
-          <Link href="/book" className="w-full">
-            <Button className="w-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 text-white font-semibold">
-              Book
+        <CardFooter className="pt-0 pb-5 px-5">
+          <Link href={`/book/${room.id}`} className="w-full">
+            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-medium shadow-sm transition-all duration-200">
+              Book Room
             </Button>
           </Link>
         </CardFooter>
       </Card>
-    </motion.div>
+    </div>
   );
 }

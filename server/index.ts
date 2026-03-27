@@ -11,6 +11,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { storage } from "./storage";
 
 const app = express();
 const httpServer = createServer(app);
@@ -70,7 +71,23 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-  await registerRoutes(httpServer, app);
+    const existingRooms = await storage.getMeetingRooms();
+    if (existingRooms.length === 0) {
+      console.log("Seeding initial meeting rooms...");
+      const sampleRooms = [
+        { name: "Alpha Room", capacity: 4, location: "1st Floor", features: "Whiteboard, Soundproof" },
+        { name: "Beta Suite", capacity: 10, location: "2nd Floor", features: "Projector, Video Conferencing, Large Screen" },
+        { name: "Gamma Boardroom", capacity: 20, location: "3rd Floor", features: "Projector, Video Conferencing, Whiteboard, Soundproof, Large Screen" },
+        { name: "Delta Pod", capacity: 2, location: "1st Floor", features: "Soundproof" },
+        { name: "Omega Hall", capacity: 50, location: "Ground Floor", features: "Projector, Video Conferencing, Whiteboard, Large Screen, Soundproof" }
+      ];
+      for (const r of sampleRooms) {
+        await storage.createMeetingRoom(r);
+      }
+      console.log("Seeded", sampleRooms.length, "rooms.");
+    }
+
+    await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

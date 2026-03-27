@@ -1,9 +1,7 @@
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import { z } from "zod";
+import type { InsertBooking } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
-
-type CreateBookingInput = z.infer<typeof api.bookings.create.input>;
 
 export function useMyBookings() {
   return useQuery({
@@ -22,12 +20,12 @@ export function useRoomBookings(roomId: number, date?: string) {
     queryFn: async () => {
       // Only fetch if we have a date
       if (!date) return [];
-
+      
       const url = buildUrl(api.bookings.listByRoom.path, { id: roomId });
       // Use URLSearchParams for query params
       const params = new URLSearchParams({ date });
       const res = await fetch(`${url}?${params.toString()}`);
-
+      
       if (!res.ok) throw new Error("Failed to fetch room schedule");
       return api.bookings.listByRoom.responses[200].parse(await res.json());
     },
@@ -35,30 +33,12 @@ export function useRoomBookings(roomId: number, date?: string) {
   });
 }
 
-export function useMultipleRoomBookings(roomIds: number[], date?: string) {
-  return useQueries({
-    queries: roomIds.map(id => ({
-      queryKey: [api.bookings.listByRoom.path, id, date],
-      queryFn: async () => {
-        if (!date) return [];
-        const url = buildUrl(api.bookings.listByRoom.path, { id });
-        const params = new URLSearchParams({ date });
-        const res = await fetch(`${url}?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to fetch room schedule");
-        return api.bookings.listByRoom.responses[200].parse(await res.json());
-      },
-      enabled: !!id && !!date,
-    }))
-  });
-}
-
-
 export function useCreateBooking() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: CreateBookingInput) => {
+    mutationFn: async (data: InsertBooking) => {
       const res = await fetch(api.bookings.create.path, {
         method: api.bookings.create.method,
         headers: { "Content-Type": "application/json" },
@@ -66,14 +46,14 @@ export function useCreateBooking() {
       });
 
       if (!res.ok) {
-        let errorMessage = "Failed to create booking";
-        try {
-          const err = await res.json();
-          errorMessage = err.message || errorMessage;
-        } catch (e) {
-          // Fallback if parsing fails
+        if (res.status === 409) {
+          throw new Error("This time slot is already booked.");
         }
-        throw new Error(errorMessage);
+        if (res.status === 400) {
+          const err = await res.json();
+          throw new Error(err.message || "Invalid booking details.");
+        }
+        throw new Error("Failed to create booking");
       }
       return api.bookings.create.responses[201].parse(await res.json());
     },
@@ -81,15 +61,14 @@ export function useCreateBooking() {
       queryClient.invalidateQueries({ queryKey: [api.bookings.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.bookings.listByRoom.path] });
       toast({
-        title: "Success",
-        description: "Room booked successfully",
-        className: "bg-emerald-600 text-white border-none",
+        title: "Booking Confirmed!",
+        description: "Your meeting room has been successfully reserved.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "Booking failed or slot unavailable",
+        title: "Booking Failed",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -104,7 +83,7 @@ export function useCancelBooking() {
     mutationFn: async (id: number) => {
       const url = buildUrl(api.bookings.cancel.path, { id });
       const res = await fetch(url, { method: api.bookings.cancel.method });
-
+      
       if (!res.ok) {
         throw new Error("Failed to cancel booking");
       }

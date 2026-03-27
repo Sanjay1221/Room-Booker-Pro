@@ -6,15 +6,8 @@ import { Redirect } from "wouter";
 import { format, parseISO, isPast } from "date-fns";
 import { Loader2, Calendar, Clock, MapPin, AlertCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,46 +59,27 @@ export default function MyBookings() {
             <Button onClick={() => window.location.href = '/dashboard'}>Book a Room</Button>
           </div>
         ) : (
-          <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Room Name</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedBookings?.map((booking) => {
-                  const bookingDateTime = parseISO(`${booking.date}T${booking.endTime}`);
-                  const isExpired = isPast(bookingDateTime);
-                  const isCancelled = booking.status === 'cancelled';
+          <div className="space-y-4">
+            {sortedBookings?.map((booking) => {
+              const bookingDateTime = parseISO(`${booking.date}T${booking.endTime}`);
+              const isExpired = isPast(bookingDateTime);
+              const isCancelled = booking.status === 'cancelled';
 
-                  return (
-                    <TableRow key={booking.id} className={cn(isCancelled && "opacity-60 bg-muted/40")}>
-                      <TableCell className="font-medium">
-                        {getRoomName(booking.roomId)}
-                        {booking.purpose && (
-                          <div className="text-xs text-muted-foreground font-normal truncate max-w-[200px]">
-                            {booking.purpose}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                          {format(parseISO(booking.date), "MMM d, yyyy")}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 whitespace-nowrap">
-                          <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                          {booking.startTime} - {booking.endTime}
-                        </div>
-                      </TableCell>
-                      <TableCell>
+              return (
+                <Card 
+                  key={booking.id} 
+                  className={cn(
+                    "p-5 transition-all hover:shadow-md border-l-4",
+                    isCancelled ? "border-l-destructive/50 opacity-75 bg-muted/20" : 
+                    isExpired ? "border-l-muted-foreground/30 bg-muted/10" : "border-l-primary"
+                  )}
+                >
+                  <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className={cn("font-bold text-lg", isCancelled && "line-through text-muted-foreground")}>
+                          {getRoomName(booking.roomId)}
+                        </h3>
                         {isCancelled ? (
                           <Badge variant="destructive" className="text-xs">Cancelled</Badge>
                         ) : isExpired ? (
@@ -113,40 +87,52 @@ export default function MyBookings() {
                         ) : (
                           <Badge className="bg-green-600 text-white text-xs hover:bg-green-700">Confirmed</Badge>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {!isExpired && !isCancelled && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 px-2">
-                                <XCircle className="w-4 h-4 mr-1.5" /> Cancel
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to cancel your reservation for <strong>{getRoomName(booking.roomId)}</strong> on {booking.date}? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Keep it</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => cancelBooking(booking.id)}
-                                  className="bg-destructive hover:bg-destructive/90"
-                                >
-                                  Yes, Cancel
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                      </div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-4 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {format(parseISO(booking.date), "EEE, MMM d, yyyy")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {booking.startTime} - {booking.endTime}
+                        </span>
+                      </div>
+                      {booking.purpose && (
+                        <p className="text-sm pt-1 italic text-muted-foreground">"{booking.purpose}"</p>
+                      )}
+                    </div>
+
+                    {!isExpired && !isCancelled && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20">
+                            Cancel
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Booking?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel your reservation for <strong>{getRoomName(booking.roomId)}</strong> on {booking.date}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep it</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => cancelBooking(booking.id)}
+                              className="bg-destructive hover:bg-destructive/90"
+                            >
+                              Yes, Cancel
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

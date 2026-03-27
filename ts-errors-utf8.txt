@@ -1,3 +1,10 @@
-﻿client/src/hooks/use-auth.ts(2,20): error TS2305: Module '"@shared/routes"' has no exported member 'InsertUser'.
-client/src/pages/admin-dashboard.tsx(24,30): error TS2339: Property 'bookings' does not exist on type '{ rooms: { update: { method: "PATCH"; path: string; input: ZodObject<{ id: ZodOptional<ZodOptional<ZodNumber>>; name: ZodOptional<ZodString>; capacity: ZodOptional<...>; location: ZodOptional<...>; features: ZodOptional<...>; imageUrl: ZodOptional<...>; }, "strip", ZodTypeAny, { ...; }, { ...; }>; responses: { ...; ...'.
-client/src/pages/admin-dashboard.tsx(49,66): error TS2339: Property 'bookings' does not exist on type '{ rooms: { update: { method: "PATCH"; path: string; input: ZodObject<{ id: ZodOptional<ZodOptional<ZodNumber>>; name: ZodOptional<ZodString>; capacity: ZodOptional<...>; location: ZodOptional<...>; features: ZodOptional<...>; imageUrl: ZodOptional<...>; }, "strip", ZodTypeAny, { ...; }, { ...; }>; responses: { ...; ...'.
+﻿
+> rest-express@1.0.0 check
+> tsc
+
+client/src/hooks/use-auth.ts(2,20): error TS2305: Module '"@shared/routes"' has no exported member 'InsertUser'.
+client/src/hooks/use-bookings.ts(2,30): error TS2305: Module '"@shared/routes"' has no exported member 'InsertBooking'.
+server/routes.ts(97,42): error TS2339: Property 'members' does not exist on type '{ date: string; roomId: number; startTime: string; endTime: string; purpose?: string | null | undefined; }'.
+server/routes.ts(139,15): error TS2339: Property 'members' does not exist on type '{ date: string; roomId: number; startTime: string; endTime: string; purpose?: string | null | undefined; }'.
+server/routes.ts(139,24): error TS2339: Property 'requirements' does not exist on type '{ date: string; roomId: number; startTime: string; endTime: string; purpose?: string | null | undefined; }'.
+server/routes.ts(182,46): error TS2339: Property 'isAdmin' does not exist on type 'User'.
