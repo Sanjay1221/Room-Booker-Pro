@@ -51,8 +51,9 @@ export async function registerRoutes(
 
   // === BOOKINGS ===
   app.get(api.bookings.list.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
-      const bookings = await storage.getBookingsByUser(1); // fixed user
+      const bookings = await storage.getBookingsByUser(req.user!.id);
       res.json(bookings);
     } catch (error) {
       console.error("Error fetching bookings by user:", error);
@@ -75,6 +76,7 @@ export async function registerRoutes(
   });
 
   app.post(api.bookings.create.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const input = api.bookings.create.input.parse(req.body);
 
@@ -139,7 +141,7 @@ export async function registerRoutes(
       const booking = await storage.createBooking({
         ...bookingData,
         roomId: assignedRoomId,
-        userId: 1 // fixed
+        userId: req.user!.id
       });
 
       // ❌ removed email (was crashing)
@@ -158,11 +160,12 @@ export async function registerRoutes(
   });
 
   app.post(api.bookings.cancel.path, async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
     try {
       const bookingId = Number(req.params.id);
       if (isNaN(bookingId)) return res.status(400).json({ message: "Invalid booking ID" });
 
-      const updated = await storage.cancelBooking(bookingId, 1);
+      const updated = await storage.cancelBooking(bookingId, req.user!.id);
 
       if (!updated) {
         return res.status(404).json({ message: "Booking not found" });
@@ -175,10 +178,10 @@ export async function registerRoutes(
     }
   });
 
-  // ❌ DISABLED ADMIN (causing crash)
-  // remove req.user usage completely
-
   app.get('/api/analytics/rooms', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user!.isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
     try {
       const rooms = await storage.getMeetingRooms();
       const allBookings = await storage.getAllBookings();
