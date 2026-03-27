@@ -49,6 +49,23 @@ export async function registerRoutes(
     }
   });
 
+  app.post(api.rooms.create.path, async (req, res) => {
+    if (!req.isAuthenticated() || !req.user!.isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const input = api.rooms.create.input.parse(req.body);
+      const room = await storage.createMeetingRoom(input);
+      res.status(201).json(room);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("Error creating room:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // === BOOKINGS ===
   app.get(api.bookings.list.path, async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
@@ -91,17 +108,11 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Book at least 1 day in advance." });
       }
 
-      const allRooms = await storage.getMeetingRooms();
-
-      const suitableRooms = allRooms
-        .filter(r => r.capacity >= input.members)
-        .sort((a, b) => a.capacity - b.capacity);
-
-      if (suitableRooms.length === 0) {
-        return res.status(404).json({ message: "No room available." });
+      // Ensure the room actually exists.
+      const room = await storage.getMeetingRoom(input.roomId);
+      if (!room) {
+        return res.status(404).json({ message: "Room not found." });
       }
-
-      let assignedRoomId: number | null = null;
 
       const timeToMinutes = (time: string) => {
         const [h, m] = time.split(':').map(Number);
@@ -111,36 +122,26 @@ export async function registerRoutes(
       const newStart = timeToMinutes(input.startTime);
       const newEnd = timeToMinutes(input.endTime);
 
-      for (const room of suitableRooms) {
-        const existing = await storage.getBookingsByRoom(room.id, input.date);
+      const existing = await storage.getBookingsByRoom(room.id, input.date);
+      let conflict = false;
 
-        let conflict = false;
+      for (const b of existing) {
+        const start = timeToMinutes(b.startTime);
+        const end = timeToMinutes(b.endTime);
 
-        for (const b of existing) {
-          const start = timeToMinutes(b.startTime);
-          const end = timeToMinutes(b.endTime);
-
-          if (newStart < end && newEnd > start) {
-            conflict = true;
-            break;
-          }
-        }
-
-        if (!conflict) {
-          assignedRoomId = room.id;
+        if (newStart < end && newEnd > start) {
+          conflict = true;
           break;
         }
       }
 
-      if (!assignedRoomId) {
+      if (conflict) {
         return res.status(409).json({ message: "Time slot already booked." });
       }
 
-      const { members, requirements, ...bookingData } = input;
-
       const booking = await storage.createBooking({
-        ...bookingData,
-        roomId: assignedRoomId,
+        ...input,
+        roomId: room.id,
         userId: req.user!.id
       });
 
@@ -174,6 +175,40 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       console.error("Error cancelling booking:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // === ADMIN ENDPOINTS ===
+  app.get('/api/admin/bookings', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user!.isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const allBookings = await storage.getAllBookings();
+      res.json(allBookings);
+    } catch (error) {
+      console.error("Error fetching all bookings:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/admin/bookings/:id/cancel', async (req, res) => {
+    if (!req.isAuthenticated() || !req.user!.isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const bookingId = Number(req.params.id);
+      if (isNaN(bookingId)) return res.status(400).json({ message: "Invalid booking ID" });
+
+      const updated = await storage.adminCancelBooking(bookingId);
+      if (!updated) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error admin cancelling booking:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   });

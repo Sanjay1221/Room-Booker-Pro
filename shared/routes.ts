@@ -75,6 +75,16 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    create: {
+      method: 'POST' as const,
+      path: '/api/rooms',
+      input: insertMeetingRoomSchema,
+      responses: {
+        201: z.custom<typeof meetingRooms.$inferSelect>(),
+        400: errorSchemas.validation,
+        403: errorSchemas.unauthorized,
+      },
+    },
   },
   bookings: {
     list: {
@@ -95,10 +105,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/bookings',
-      input: insertBookingSchema.extend({
-        members: z.number().min(1).max(50),
-        requirements: z.array(z.string()).optional(),
-      }),
+      input: insertBookingSchema,
       responses: {
         201: z.custom<typeof bookings.$inferSelect>(),
         400: errorSchemas.validation, // or conflict
