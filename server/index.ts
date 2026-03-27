@@ -76,9 +76,9 @@ app.use((req, res, next) => {
     // Map of default images for our standard rooms
     const defaultImages: Record<string, string> = {
       "Alpha Room": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800",
-      "Beta Suite": "https://images.unsplash.com/photo-1517502884422-41ea31631ff2?auto=format&fit=crop&q=80&w=800",
+      "Beta Suite": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=800",
       "Gamma Boardroom": "https://images.unsplash.com/photo-1505409859467-3a796fd5798e?auto=format&fit=crop&q=80&w=800",
-      "Delta Pod": "https://images.unsplash.com/photo-1596484552834-6a58f850d0d1?auto=format&fit=crop&q=80&w=800",
+      "Delta Pod": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800",
       "Omega Hall": "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=800"
     };
 
@@ -96,10 +96,10 @@ app.use((req, res, next) => {
       }
       console.log("Seeded", sampleRooms.length, "rooms.");
     } else {
-      // Temporary migration to patch missing images in existing deployments
+      // Patch missing or broken images in existing deployments
       let updatedCount = 0;
       for (const room of existingRooms) {
-        if (!room.imageUrl && defaultImages[room.name]) {
+        if ((!room.imageUrl || room.name === "Beta Suite" || room.name === "Delta Pod") && defaultImages[room.name]) {
           await storage.updateMeetingRoom(room.id, { imageUrl: defaultImages[room.name] });
           updatedCount++;
         }
