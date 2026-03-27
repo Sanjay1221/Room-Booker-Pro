@@ -4,7 +4,12 @@ import { storage } from "./storage";
 export function setupAuth(app: Express) {
   // Mock authentication routes for deployment without auth
   app.post("/api/register", async (req, res) => {
-    return res.status(400).json({ message: "Registration disabled" });
+    try {
+      const user = await storage.createUser(req.body);
+      res.status(201).json(user);
+    } catch (error: any) {
+      res.status(400).json({ message: error.message || "Registration failed" });
+    }
   });
 
   app.post("/api/login", async (req, res) => {
