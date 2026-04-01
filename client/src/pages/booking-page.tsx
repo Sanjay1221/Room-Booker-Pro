@@ -26,7 +26,7 @@ const generateTimeSlots = () => {
 
   while (isBefore(start, end)) {
     slots.push(format(start, "HH:mm"));
-    start = addMinutes(start, 30);
+    start = addMinutes(start, 10);
   }
   return slots;
 };
@@ -66,13 +66,21 @@ export default function BookingPage() {
   // Calculate unavailability
   const isSlotUnavailable = (slot: string) => {
     if (!bookings) return false;
-    // Simple check: if booking starts exactly at slot or overlaps
-    // For a robust system, we'd need proper interval checking logic
-    // This is a simplified check for the "start time" picker
+    
+    const timeToMinutes = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h * 60 + m;
+    };
+    
+    const newStart = timeToMinutes(slot);
+    const newEnd = newStart + parseInt(duration); // duration is in minutes
+    
     return bookings.some(b => {
-      // Very basic string comparison for demo
-      // Ideally convert everything to minutes from midnight
-      return slot >= b.startTime && slot < b.endTime;
+      const start = timeToMinutes(b.startTime);
+      const end = timeToMinutes(b.endTime);
+      
+      // 10-minute gap validation
+      return (newStart < end + 10 && newEnd > start - 10);
     });
   };
 

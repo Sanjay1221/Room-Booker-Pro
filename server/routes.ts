@@ -129,14 +129,15 @@ export async function registerRoutes(
         const start = timeToMinutes(b.startTime);
         const end = timeToMinutes(b.endTime);
 
-        if (newStart < end && newEnd > start) {
+        // Add 10-minute gap requirement
+        if (newStart < end + 10 && newEnd > start - 10) {
           conflict = true;
           break;
         }
       }
 
       if (conflict) {
-        return res.status(409).json({ message: "Time slot already booked." });
+        return res.status(409).json({ message: "Time slot conflicts or does not leave a 10-minute gap." });
       }
 
       const booking = await storage.createBooking({
